@@ -1,0 +1,98 @@
+﻿@model IEnumerable<CLDV_POE.Models.Order>
+
+@{
+    ViewData["Title"] = "Orders";
+}
+
+<div class="page-header">
+    <h1>Orders</h1>
+    <a asp-action="Register" class="btn-create">+ Create New Order</a>
+</div>
+
+<table class="table-custom">
+    <thead>
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.OrderId)</th>
+            <th>@Html.DisplayNameFor(model => model.CustomerId)</th>
+            <th>@Html.DisplayNameFor(model => model.ProductId)</th>
+            <th>@Html.DisplayNameFor(model => model.Quantity)</th>
+            <th>@Html.DisplayNameFor(model => model.OrderDate)</th>
+            <th>@Html.DisplayNameFor(model => model.PartitionKey)</th>
+            <th>@Html.DisplayNameFor(model => model.RowKey)</th>
+            <th>@Html.DisplayNameFor(model => model.Timestamp)</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.OrderId)</td>
+                <td>@Html.DisplayFor(modelItem => item.CustomerId)</td>
+                <td>@Html.DisplayFor(modelItem => item.ProductId)</td>
+                <td>@Html.DisplayFor(modelItem => item.Quantity)</td>
+                <td>@Html.DisplayFor(modelItem => item.OrderDate)</td>
+                <td>@Html.DisplayFor(modelItem => item.PartitionKey)</td>
+                <td>@Html.DisplayFor(modelItem => item.RowKey)</td>
+                <td>@Html.DisplayFor(modelItem => item.Timestamp)</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<style>
+    /* Header Section */
+    .page-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #333;
+        }
+
+    .btn-create {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #007aff; /* Apple blue */
+        color: white;
+        font-weight: bold;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: transform 0.2s, background 0.3s;
+    }
+
+        .btn-create:hover {
+            background: #005bb5;
+            transform: scale(1.05);
+        }
+
+    /* Orders Table */
+    .table-custom {
+        width: 90%;
+        margin: 0 auto;
+        border-collapse: collapse;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+        .table-custom thead {
+            background: #f5f5f7;
+        }
+
+        .table-custom th, .table-custom td {
+            padding: 15px;
+            text-align: center;
+        }
+
+        .table-custom tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        .table-custom tr:hover {
+            background: #f0f0f5;
+        }
+</style>
