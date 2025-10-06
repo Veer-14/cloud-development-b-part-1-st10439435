@@ -11,9 +11,10 @@ namespace CLDV_POE
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+            builder.Services.AddHttpClient();
 
             // Make sure your connection string name matches what's in appsettings.json
-            builder.Services.AddSingleton(new TableStorageService(
+           builder.Services.AddSingleton(new TableStorageService(
                 configuration.GetConnectionString("AzureStorage")
             ));
 

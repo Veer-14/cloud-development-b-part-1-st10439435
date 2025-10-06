@@ -1,32 +1,46 @@
-﻿using Azure.Data.Tables;
-using Azure;
-using CLDV_POE.Models;
-using CLDV_POE.Services;
+﻿using CLDV_POE.Models;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace MVCAzureBird.Controllers
+namespace CLDV_POE.Controllers
 {
     public class OrderController : Controller
     {
-        private readonly TableStorageService _tableStorageService;
-        private readonly QueueService _queueService;
+        private readonly HttpClient _httpClient;
+        private readonly string _baseFunctionUrl = "https://functionapptasveerst10439435poe-bsdad4cbd9cjchej.southafricanorth-01.azurewebsites.net/api/";
 
-        public OrderController(TableStorageService tableStorageService, QueueService queueService)
+        public OrderController(HttpClient httpClient)
         {
-            _tableStorageService = tableStorageService;
-            _queueService = queueService;
+            _httpClient = httpClient;
         }
 
         public async Task<IActionResult> Index()
         {
-            var orders = await _tableStorageService.GetAllOrdersAsync();
+            var response = await _httpClient.GetAsync(_baseFunctionUrl + "orders");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                ViewBag.Error = $"Failed to load orders. Server said: {errorMessage}";
+                return View(new List<Order>()); // Return empty list so the view still loads
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var orders = JsonConvert.DeserializeObject<List<Order>>(content);
+
             return View(orders);
         }
 
         public async Task<IActionResult> Register()
         {
-            var customers = await _tableStorageService.GetAllCustomersAsync();
-            var products = await _tableStorageService.GetAllProductsAsync();
+            var customers = await _httpClient.GetFromJsonAsync<List<Customer>>(_baseFunctionUrl + "customers");
+            var products = await _httpClient.GetFromJsonAsync<List<Product>>(_baseFunctionUrl + "products");
 
             if (customers == null || !customers.Any() || products == null || !products.Any())
             {
@@ -42,26 +56,31 @@ namespace MVCAzureBird.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(Order order)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                order.OrderDate = DateTime.SpecifyKind(order.OrderDate, DateTimeKind.Utc);
-                order.PartitionKey = "OrderPartition";
-                order.RowKey = Guid.NewGuid().ToString();
-
-                await _tableStorageService.AddOrderAsync(order);
-
-                string message = $"New order by customer {order.CustomerId} " +
-                                $"of the product {order.ProductId} on {order.OrderDate}";
-                await _queueService.SendMessageAsync(message);
-
-                return RedirectToAction("Index");
+                ViewData["Customer"] = await _httpClient.GetFromJsonAsync<List<Customer>>(_baseFunctionUrl + "customers");
+                ViewData["Product"] = await _httpClient.GetFromJsonAsync<List<Product>>(_baseFunctionUrl + "products");
+                return View(order);
             }
 
-            var customers = await _tableStorageService.GetAllCustomersAsync();
-            var products = await _tableStorageService.GetAllProductsAsync();
-            ViewData["Customer"] = customers;
-            ViewData["Product"] = products;
+            order.PartitionKey = "Order";
+            order.RowKey = Guid.NewGuid().ToString();
+            order.OrderDate = DateTime.SpecifyKind(order.OrderDate, DateTimeKind.Utc);
+
+            var json = JsonConvert.SerializeObject(order);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            
+            var response = await _httpClient.PostAsync(_baseFunctionUrl + "orders", content);
+
+            if (response.IsSuccessStatusCode)
+                return RedirectToAction("Index");
+
+            ModelState.AddModelError("", "Error saving order via Azure Function.");
+            ViewData["Customer"] = await _httpClient.GetFromJsonAsync<List<Customer>>(_baseFunctionUrl + "customers");
+            ViewData["Product"] = await _httpClient.GetFromJsonAsync<List<Product>>(_baseFunctionUrl + "products");
             return View(order);
         }
+
     }
-} 
+}
