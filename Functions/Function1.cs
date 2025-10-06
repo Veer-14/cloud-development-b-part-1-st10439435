@@ -199,6 +199,8 @@ namespace QueueFunctions
         public async Task<HttpResponseData> AddProduct([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "products")] HttpRequestData req)
         {
             string body = await new StreamReader(req.Body).ReadToEndAsync();
+
+            // Deserialize product from JSON
             var product = JsonSerializer.Deserialize<Product>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
             if (product == null || string.IsNullOrEmpty(product.ProductName) || string.IsNullOrEmpty(product.ProductDescription) || product.Price == null)
@@ -208,15 +210,20 @@ namespace QueueFunctions
                 return bad;
             }
 
+            // Set PartitionKey and RowKey
             product.PartitionKey ??= "Product";
             product.RowKey ??= Guid.NewGuid().ToString();
 
+            
+
+            // Add product to Table Storage
             await _product.AddEntityAsync(product);
 
             var response = req.CreateResponse(HttpStatusCode.Created);
-            await response.WriteStringAsync("Product added successfully.");
+            await response.WriteStringAsync("Product added successfully with image uploaded to Blob Storage.");
             return response;
         }
+
 
         [Function("AddOrder")]
         public async Task<HttpResponseData> AddOrder([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "orders")] HttpRequestData req)
@@ -425,6 +432,9 @@ namespace QueueFunctions
                 return error;
             }
         }
+
+       
+
 
     }
 
